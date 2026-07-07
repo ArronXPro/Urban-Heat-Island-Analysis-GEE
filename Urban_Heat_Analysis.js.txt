@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vibe — Music Streaming</title>
+<link rel="stylesheet" href="style.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h1 class="logo">🎧 Vibe</h1>
+      <nav>
+        <button class="nav-btn active" data-view="home">🏠 Home</button>
+        <button class="nav-btn" data-view="favorites">❤️ Favorites</button>
+        <button class="nav-btn" data-view="queue">🎵 Queue</button>
+      </nav>
+
+      <div class="theme-picker">
+        <label>🎨 Theme Color</label>
+        <input type="color" id="themeColor" value="#e91e63" />
+        <div class="preset-colors">
+          <span data-color="#e91e63" style="background:#e91e63"></span>
+          <span data-color="#9c27b0" style="background:#9c27b0"></span>
+          <span data-color="#00e5ff" style="background:#00e5ff"></span>
+          <span data-color="#4caf50" style="background:#4caf50"></span>
+          <span data-color="#ff9800" style="background:#ff9800"></span>
+          <span data-color="#f44336" style="background:#f44336"></span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="🔍 Search songs, artists..." />
+        <button id="searchBtn">Search</button>
+      </div>
+
+      <h2 id="sectionTitle">🔥 Trending Now</h2>
+      <div class="track-grid" id="trackGrid"></div>
+    </main>
+
+    <!-- Player -->
+    <footer class="player">
+      <div class="now-playing">
+        <img id="nowImg" src="https://via.placeholder.com/60/222/fff?text=🎵" />
+        <div>
+          <div id="nowTitle">Select a song</div>
+          <div id="nowArtist" class="muted">—</div>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="btns">
+          <button id="prevBtn">⏮</button>
+          <button id="playBtn" class="play">▶</button>
+          <button id="nextBtn">⏭</button>
+        </div>
+        <div class="progress">
+          <span id="curTime">0:00</span>
+          <input type="range" id="seek" value="0" min="0" max="100" />
+          <span id="durTime">0:00</span>
+        </div>
+      </div>
+      <div class="extras">
+        <button id="favBtn" title="Favorite">🤍</button>
+        <button id="downloadBtn" title="Download">⬇️</button>
+        <input type="range" id="volume" min="0" max="1" step="0.01" value="0.8" />
+      </div>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
+
+
+:root {
+  --accent: #e91e63;
+  --bg: #0d0d0f;
+  --bg-2: #17171b;
+  --bg-3: #1f1f25;
+  --text: #f2f2f2;
+  --muted: #9a9aa5;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+body { background: var(--bg); color: var(--text); overflow: hidden; }
+
+.app {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  grid-template-rows: 1fr 90px;
+  grid-template-areas: "sidebar main" "player player";
+  height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  grid-area: sidebar;
+  background: var(--bg-2);
+  padding: 24px 18px;
+  border-right: 1px solid #222;
+  display: flex; flex-direction: column;
+}
+.logo { color: var(--accent); font-size: 26px; margin-bottom: 30px; }
+.nav-btn {
+  background: none; border: none; color: var(--text);
+  text-align: left; padding: 12px; width: 100%; cursor: pointer;
+  border-radius: 8px; font-size: 15px; margin-bottom: 6px;
+  transition: 0.2s;
+}
+.nav-btn:hover, .nav-btn.active {
+  background: var(--accent); color: #fff;
+}
+.theme-picker { margin-top: auto; }
+.theme-picker label { display: block; margin-bottom: 8px; color: var(--muted); font-size: 13px;}
+#themeColor { width: 100%; height: 36px; border: none; background: none; cursor: pointer; }
+.preset-colors { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;}
+.preset-colors span {
+  width: 24px; height: 24px; border-radius: 50%;
+  cursor: pointer; border: 2px solid #333;
+  transition: transform 0.2s;
+}
+.preset-colors span:hover { transform: scale(1.2); }
+
+/* Main */
+.main {
+  grid-area: main;
+  padding: 24px 32px;
+  overflow-y: auto;
+}
+.search-bar { display: flex; gap: 10px; margin-bottom: 24px; }
+#searchInput {
+  flex: 1; padding: 12px 16px; border-radius: 8px;
+  background: var(--bg-3); border: 1px solid #333; color: var(--text);
+  font-size: 15px;
+}
+#searchInput:focus { outline: 2px solid var(--accent); }
+#searchBtn {
+  background: var(--accent); color: #fff; border: none;
+  padding: 0 22px; border-radius: 8px; cursor: pointer; font-weight: 600;
+}
+#sectionTitle { margin-bottom: 18px; }
+
+.track-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 18px;
+}
+.track-card {
+  background: var(--bg-2);
+  border-radius: 12px; padding: 12px; cursor: pointer;
+  transition: 0.2s;
+}
+.track-card:hover { background: var(--bg-3); transform: translateY(-4px); }
+.track-card img { width: 100%; border-radius: 8px; aspect-ratio: 1; object-fit: cover; }
+.track-card .title { font-weight: 600; margin-top: 10px; font-size: 14px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+.track-card .artist { color: var(--muted); font-size: 12px; margin-top: 4px;}
+
+/* Player */
+.player {
+  grid-area: player;
+  background: var(--bg-2);
+  border-top: 1px solid #222;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  align-items: center;
+  padding: 0 20px;
+  gap: 20px;
+}
+.now-playing { display: flex; align-items: center; gap: 12px; }
+.now-playing img { width: 54px; height: 54px; border-radius: 6px; }
+.muted { color: var(--muted); font-size: 12px; }
+
+.controls { display: flex; flex-direction: column; align-items: center; gap: 6px;}
+.btns button {
+  background: none; border: none; color: var(--text); font-size: 22px;
+  margin: 0 8px; cursor: pointer;
+}
+.btns .play {
+  background: var(--accent); border-radius: 50%;
+  width: 42px; height: 42px; font-size: 18px;
+}
+.progress { display: flex; align-items: center; gap: 8px; width: 100%; font-size: 12px; color: var(--muted);}
+.progress input { flex: 1; accent-color: var(--accent); }
+
+.extras { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.extras button { background: none; border: none; color: var(--text); font-size: 20px; cursor: pointer;}
+#volume { width: 100px; accent-color: var(--accent); }
+
+/* Mobile */
+@media (max-width: 780px) {
+  .app { grid-template-columns: 1fr; grid-template-areas: "main" "player";}
+  .sidebar { display: none; }
+}
+
+
+
+
+// ====== CONFIG ======
+const JAMENDO_CLIENT_ID = "YOUR_JAMENDO_CLIENT_ID"; // <-- Paste your key here
+const API = "https://api.jamendo.com/v3.0/tracks";
+
+// ====== STATE ======
+let tracks = [];
+let currentIndex = -1;
+let sound = null;
+let favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+let queue = [];
+let view = "home";
+
+// ====== ELEMENTS ======
+const trackGrid = document.getElementById("trackGrid");
+const searchInput = document.getElementById("searchInput");
+const searchBtn = document.getElementById("searchBtn");
+const playBtn = document.getElementById("playBtn");
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+const seek = document.getElementById("seek");
+const volume = document.getElementById("volume");
+const nowImg = document.getElementById("nowImg");
+const nowTitle = document.getElementById("nowTitle");
+const nowArtist = document.getElementById("nowArtist");
+const curTime = document.getElementById("curTime");
+const durTime = document.getElementById("durTime");
+const favBtn = document.getElementById("favBtn");
+const downloadBtn = document.getElementById("downloadBtn");
+const sectionTitle = document.getElementById("sectionTitle");
+const themeColor = document.getElementById("themeColor");
+
+// ====== THEME ======
+function setTheme(color) {
+  document.documentElement.style.setProperty("--accent", color);
+  localStorage.setItem("accent", color);
+}
+themeColor.addEventListener("input", e => setTheme(e.target.value));
+document.querySelectorAll(".preset-colors span").forEach(el => {
+  el.addEventListener("click", () => {
+    const c = el.dataset.color;
+    themeColor.value = c;
+    setTheme(c);
+  });
+});
+const savedColor = localStorage.getItem("accent");
+if (savedColor) { themeColor.value = savedColor; setTheme(savedColor); }
+
+// ====== NAVIGATION ======
+document.querySelectorAll(".nav-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    view = btn.dataset.view;
+    if (view === "home") loadTrending();
+    if (view === "favorites") showFavorites();
+    if (view === "queue") showQueue();
+  });
+});
+
+// ====== FETCH TRACKS ======
+async function loadTrending() {
+  sectionTitle.textContent = "🔥 Trending Now";
+  const url = `${API}/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=24&order=popularity_total`;
+  const res = await fetch(url);
+  const data = await res.json();
+  tracks = data.results;
+  renderTracks(tracks);
+}
+
+async function searchTracks(q) {
+  sectionTitle.textContent = `🔍 Results for "${q}"`;
+  const url = `${API}/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=30&search=${encodeURIComponent(q)}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  tracks = data.results;
+  renderTracks(tracks);
+}
+
+searchBtn.addEventListener("click", () => {
+  const q = searchInput.value.trim();
+  if (q) searchTracks(q);
+});
+searchInput.addEventListener("keypress", e => {
+  if (e.key === "Enter") searchBtn.click();
+});
+
+// ====== RENDER ======
+function renderTracks(list) {
+  trackGrid.innerHTML = "";
+  if (!list.length) {
+    trackGrid.innerHTML = `<p style="color:var(--muted)">No tracks found.</p>`;
+    return;
+  }
+  list.forEach((t, i) => {
+    const card = document.createElement("div");
+    card.className = "track-card";
+    card.innerHTML = `
+      <img src="${t.image}" alt="" />
+      <div class="title">${t.name}</div>
+      <div class="artist">${t.artist_name}</div>
+    `;
+    card.addEventListener("click", () => playTrack(i, list));
+    // Preload audio for instant play
+    const preload = new Audio();
+    preload.preload = "auto";
+    preload.src = t.audio;
+    trackGrid.appendChild(card);
+  });
+}
+
+function showFavorites() {
+  sectionTitle.textContent = "❤️ Your Favorites";
+  tracks = favorites;
+  renderTracks(favorites);
+}
+
+function showQueue() {
+  sectionTitle.textContent = "🎵 Play Queue";
+  renderTracks(queue);
+}
+
+// ====== PLAYER ======
+function playTrack(index, list) {
+  if (sound) sound.unload();
+  currentIndex = index;
+  tracks = list;
+  const t = list[index];
+
+  sound = new Howl({
+    src: [t.audio],
+    html5: true,
+    volume: parseFloat(volume.value),
+    onplay: () => {
+      playBtn.textContent = "⏸";
+      durTime.textContent = formatTime(sound.duration());
+      requestAnimationFrame(updateSeek);
+    },
+    onpause: () => playBtn.textContent = "▶",
+    onend: () => nextBtn.click(),
+  });
+  sound.play();
+
+  nowImg.src = t.image;
+  nowTitle.textContent = t.name;
+  nowArtist.textContent = t.artist_name;
+  updateFavBtn();
+}
+
+function updateSeek() {
+  if (sound && sound.playing()) {
+    const s = sound.seek();
+    seek.value = (s / sound.duration()) * 100;
+    curTime.textContent = formatTime(s);
+    requestAnimationFrame(updateSeek);
+  }
+}
+
+seek.addEventListener("input", () => {
+  if (sound) sound.seek((seek.value / 100) * sound.duration());
+});
+
+playBtn.addEventListener("click", () => {
+  if (!sound) return;
+  sound.playing() ? sound.pause() : sound.play();
+});
+
+prevBtn.addEventListener("click", () => {
+  if (currentIndex > 0) playTrack(currentIndex - 1, tracks);
+});
+nextBtn.addEventListener("click", () => {
+  if (currentIndex < tracks.length - 1) playTrack(currentIndex + 1, tracks);
+});
+
+volume.addEventListener("input", () => {
+  if (sound) sound.volume(parseFloat(volume.value));
+});
+
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60).toString().padStart(2, "0");
+  return `${m}:${sec}`;
+}
+
+// ====== FAVORITES ======
+favBtn.addEventListener("click", () => {
+  if (currentIndex < 0) return;
+  const t = tracks[currentIndex];
+  const idx = favorites.findIndex(f => f.id === t.id);
+  if (idx >= 0) favorites.splice(idx, 1);
+  else favorites.push(t);
+  localStorage.setItem("favorites", JSON.stringify(favorites));
+  updateFavBtn();
+});
+
+function updateFavBtn() {
+  if (currentIndex < 0) return;
+  const t = tracks[currentIndex];
+  const isFav = favorites.some(f => f.id === t.id);
+  favBtn.textContent = isFav ? "❤️" : "🤍";
+}
+
+// ====== DOWNLOAD (Jamendo tracks are legally downloadable) ======
+downloadBtn.addEventListener("click", () => {
+  if (currentIndex < 0) return;
+  const t = tracks[currentIndex];
+  const a = document.createElement("a");
+  a.href = t.audiodownload || t.audio;
+  a.download = `${t.artist_name} - ${t.name}.mp3`;
+  a.click();
+});
+
+// ====== INIT ======
+loadTrending();
